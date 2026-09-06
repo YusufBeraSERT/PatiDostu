@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PatiDostu 🐾</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f7f6; color: #2d3748; margin:0;">
+
+    <header class="navbar" style="background: #ffffff; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div class="logo" style="font-size: 24px; font-weight: 800; color: #ff6b6b;">🐾 Pati<span style="color: #4ecdc4;">Dostu</span></div>
+        
+        <nav class="nav-links" style="display: flex; gap: 20px;">
+            <a href="{{ url_for('index', page='feed', lang=lang) }}" style="text-decoration:none; font-weight:600; color: #4a5568;">{{ t.nav_feed }}</a>
+            <a href="{{ url_for('index', page='adopt', lang=lang) }}" style="text-decoration:none; font-weight:600; color: #4a5568;">{{ t.nav_adopt }}</a>
+            <a href="{{ url_for('index', page='lost', lang=lang) }}" style="text-decoration:none; font-weight:600; color: #4a5568;">{{ t.nav_lost }}</a>
+        </nav>
+
+        <div class="nav-actions" style="display: flex; align-items: center; gap: 15px;">
+            <!-- ÇOKLU DİL SEÇİMİ -->
+            <div class="lang-switch" style="font-weight: 700; background: #edf2f7; padding: 5px 10px; border-radius: 8px;">
+                <a href="{{ url_for('index', page=page, lang='tr') }}" style="text-decoration:none; color: {% if lang=='tr' %}#ff6b6b{% else %}#718096{% endif %};">TR</a> | 
+                <a href="{{ url_for('index', page=page, lang='en') }}" style="text-decoration:none; color: {% if lang=='en' %}#ff6b6b{% else %}#718096{% endif %};">EN</a> | 
+                <a href="{{ url_for('index', page=page, lang='de') }}" style="text-decoration:none; color: {% if lang=='de' %}#ff6b6b{% else %}#718096{% endif %};">DE</a> | 
+                <a href="{{ url_for('index', page=page, lang='es') }}" style="text-decoration:none; color: {% if lang=='es' %}#ff6b6b{% else %}#718096{% endif %};">ES</a>
+            </div>
+
+            {% if current_user %}
+                <div class="user-badge" style="background: #e6fffa; color: #234e52; padding: 6px 12px; border-radius: 20px; font-weight: 700;">
+                    <span>👋 {{ current_user.username }}</span>
+                    <span style="margin-left: 8px; background: #4ecdc4; color: white; padding: 2px 8px; border-radius: 10px;">🏆 {{ current_user.points }} {{ t.pts_tag }}</span>
+                    <a href="{{ url_for('logout') }}" style="margin-left: 8px; color: #e53e3e; text-decoration: none; font-size: 13px;">{{ t.logout }}</a>
+                </div>
+            {% else %}
+                <button onclick="openLoginModal()" style="background: #4ecdc4; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                    {{ t.login }}
+                </button>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="container" style="max-width: 800px; margin: 30px auto; padding: 0 20px;">
+        
+        {% if page == 'feed' %}
+        <section style="background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px;">
+            <h2 style="margin-top:0;">{{ t.feed_title }}</h2>
+            <form action="{{ url_for('add_feeding', lang=lang) }}" method="POST" enctype="multipart/form-data">
+                {% if not current_user %}
+                <input type="text" name="username" placeholder="İsminiz" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                {% endif %}
+                <input type="text" name="location" placeholder="Sokak / Semt Adı" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <textarea name="note" rows="2" placeholder="Küçük bir not bırak..." style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;"></textarea>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: 600; font-size: 14px;">{{ t.upload_label }}</label>
+                    <input type="file" name="file" accept="image/*" required style="display: block; margin-top: 5px;">
+                </div>
+                
+                <button type="submit" style="background: #ff6b6b; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%;">{{ t.feed_btn }}</button>
+            </form>
+        </section>
+
+        <section>
+            <div class="feed-list" style="display: flex; flex-direction: column; gap: 20px;">
+                {% for item in feedings %}
+                <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                    <img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" style="width: 100%; max-height: 400px; object-fit: cover;">
+                    <div style="padding: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-weight: 700;">@{{ item.username }}</span>
+                            <span style="font-size: 12px; color: #a0aec0;">{{ item.created_at }}</span>
+                        </div>
+                        <p style="margin: 5px 0; font-size: 14px; color: #718096;">📍 {{ item.location }}</p>
+                        <p style="margin-top: 10px;">{{ item.note }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <p style="text-align: center; color: #a0aec0;">{{ t.empty_feed }}</p>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if page == 'adopt' %}
+        <section style="background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px;">
+            <h2 style="margin-top:0;">{{ t.adopt_title }}</h2>
+            <form action="{{ url_for('add_adopt', lang=lang) }}" method="POST" enctype="multipart/form-data">
+                <input type="text" name="name" placeholder="Dostumuzun Adı" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="breed" placeholder="Türü / Irkı" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="age" placeholder="Yaşı" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="location" placeholder="Şehir" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="contact" placeholder="İletişim (Telefon / E-posta)" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: 600; font-size: 14px;">{{ t.upload_label }}</label>
+                    <input type="file" name="file" accept="image/*" required style="display: block; margin-top: 5px;">
+                </div>
+                <button type="submit" style="background: #4ecdc4; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%;">{{ t.adopt_btn }}</button>
+            </form>
+        </section>
+
+        <section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px;">
+            {% for item in adoptions %}
+            <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                <img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" style="width: 100%; height: 200px; object-fit: cover;">
+                <div style="padding: 15px;">
+                    <h3 style="margin: 0 0 8px 0;">{{ item.name }}</h3>
+                    <p style="margin: 3px 0; font-size: 13px; color: #4a5568;">🐾 {{ item.breed }} ({{ item.age }})</p>
+                    <p style="margin: 3px 0; font-size: 13px; color: #4a5568;">📍 {{ item.location }}</p>
+                    <a href="tel:{{ item.contact }}" style="display: block; text-align: center; margin-top: 10px; background: #edf2f7; color: #2d3748; padding: 8px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px;">📞 {{ item.contact }}</a>
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        {% if page == 'lost' %}
+        <section style="background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px;">
+            <h2 style="margin-top:0;">{{ t.lost_title }}</h2>
+            <form action="{{ url_for('add_lost', lang=lang) }}" method="POST" enctype="multipart/form-data">
+                <input type="text" name="title" placeholder="İlan Başlığı" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="pet_type" placeholder="Tür / Belirgin Özellikler" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="last_seen" placeholder="Son Görüldüğü Yer" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="phone" placeholder="Telefon Numarası" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: 600; font-size: 14px;">{{ t.upload_label }}</label>
+                    <input type="file" name="file" accept="image/*" required style="display: block; margin-top: 5px;">
+                </div>
+                <button type="submit" style="background: #e53e3e; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%;">{{ t.lost_btn }}</button>
+            </form>
+        </section>
+
+        <section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px;">
+            {% for item in lost_pets %}
+            <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 2px solid #feb2b2;">
+                <img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" style="width: 100%; height: 200px; object-fit: cover;">
+                <div style="padding: 15px;">
+                    <h3 style="margin: 0 0 8px 0; color: #e53e3e;">{{ item.title }}</h3>
+                    <p style="margin: 3px 0; font-size: 13px; color: #4a5568;">🐾 {{ item.pet_type }}</p>
+                    <p style="margin: 3px 0; font-size: 13px; color: #4a5568;">📍 {{ item.last_seen }}</p>
+                    <a href="tel:{{ item.phone }}" style="display: block; text-align: center; margin-top: 10px; background: #fff5f5; color: #e53e3e; padding: 8px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px;">📞 {{ item.phone }}</a>
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+    </main>
+
+    <!-- GİRİŞ MODAL -->
+    <div id="loginModal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); align-items: center; justify-content: center;">
+        <div style="background: white; padding: 30px; border-radius: 16px; width: 320px; position: relative;">
+            <span onclick="closeLoginModal()" style="position: absolute; right: 15px; top: 10px; cursor: pointer; font-size: 20px; font-weight: bold;">&times;</span>
+            <h3 style="margin-top:0;">🐾 Hoş Geldin!</h3>
+            <form action="{{ url_for('login') }}" method="POST">
+                <input type="text" name="username" placeholder="Adın" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="email" name="email" placeholder="E-posta" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <button type="submit" style="background: #4ecdc4; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%;">Giriş Yap</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openLoginModal() { document.getElementById("loginModal").style.display = "flex"; }
+        function closeLoginModal() { document.getElementById("loginModal").style.display = "none"; }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PatiDostu 🐾</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f7f6; color: #2d3748; margin:0;">
+
+    <header class="navbar" style="background: #ffffff; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div class="logo" style="font-size: 24px; font-weight: 800; color: #ff6b6b;">🐾 Pati<span style="color: #4ecdc4;">Dostu</span></div>
+        
+        <nav class="nav-links" style="display: flex; gap: 20px;">
+            <a href="{{ url_for('index', page='feed', lang=lang) }}" style="text-decoration:none; font-weight:600; color: #4a5568;">{{ t.nav_feed }}</a>
+            <a href="{{ url_for('index', page='adopt', lang=lang) }}" style="text-decoration:none; font-weight:600; color: #4a5568;">{{ t.nav_adopt }}</a>
+            <a href="{{ url_for('index', page='lost', lang=lang) }}" style="text-decoration:none; font-weight:600; color: #4a5568;">{{ t.nav_lost }}</a>
+        </nav>
+
+        <div class="nav-actions" style="display: flex; align-items: center; gap: 15px;">
+            <!-- ÇOKLU DİL SEÇİMİ -->
+            <div class="lang-switch" style="font-weight: 700; background: #edf2f7; padding: 5px 10px; border-radius: 8px;">
+                <a href="{{ url_for('index', page=page, lang='tr') }}" style="text-decoration:none; color: {% if lang=='tr' %}#ff6b6b{% else %}#718096{% endif %};">TR</a> | 
+                <a href="{{ url_for('index', page=page, lang='en') }}" style="text-decoration:none; color: {% if lang=='en' %}#ff6b6b{% else %}#718096{% endif %};">EN</a> | 
+                <a href="{{ url_for('index', page=page, lang='de') }}" style="text-decoration:none; color: {% if lang=='de' %}#ff6b6b{% else %}#718096{% endif %};">DE</a> | 
+                <a href="{{ url_for('index', page=page, lang='es') }}" style="text-decoration:none; color: {% if lang=='es' %}#ff6b6b{% else %}#718096{% endif %};">ES</a>
+            </div>
+
+            {% if current_user %}
+                <div class="user-badge" style="background: #e6fffa; color: #234e52; padding: 6px 12px; border-radius: 20px; font-weight: 700;">
+                    <span>👋 {{ current_user.username }}</span>
+                    <span style="margin-left: 8px; background: #4ecdc4; color: white; padding: 2px 8px; border-radius: 10px;">🏆 {{ current_user.points }} {{ t.pts_tag }}</span>
+                    <a href="{{ url_for('logout') }}" style="margin-left: 8px; color: #e53e3e; text-decoration: none; font-size: 13px;">{{ t.logout }}</a>
+                </div>
+            {% else %}
+                <button onclick="openLoginModal()" style="background: #4ecdc4; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                    {{ t.login }}
+                </button>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="container" style="max-width: 800px; margin: 30px auto; padding: 0 20px;">
+        
+        {% if page == 'feed' %}
+        <section style="background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px;">
+            <h2 style="margin-top:0;">{{ t.feed_title }}</h2>
+            <form action="{{ url_for('add_feeding', lang=lang) }}" method="POST" enctype="multipart/form-data">
+                {% if not current_user %}
+                <input type="text" name="username" placeholder="İsminiz" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                {% endif %}
+                <input type="text" name="location" placeholder="Sokak / Semt Adı" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <textarea name="note" rows="2" placeholder="Küçük bir not bırak..." style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;"></textarea>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: 600; font-size: 14px;">{{ t.upload_label }}</label>
+                    <input type="file" name="file" accept="image/*" required style="display: block; margin-top: 5px;">
+                </div>
+                
+                <button type="submit" style="background: #ff6b6b; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%;">{{ t.feed_btn }}</button>
+            </form>
+        </section>
+
+        <section>
+            <div class="feed-list" style="display: flex; flex-direction: column; gap: 20px;">
+                {% for item in feedings %}
+                <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                    <img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" style="width: 100%; max-height: 400px; object-fit: cover;">
+                    <div style="padding: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-weight: 700;">@{{ item.username }}</span>
+                            <span style="font-size: 12px; color: #a0aec0;">{{ item.created_at }}</span>
+                        </div>
+                        <p style="margin: 5px 0; font-size: 14px; color: #718096;">📍 {{ item.location }}</p>
+                        <p style="margin-top: 10px;">{{ item.note }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <p style="text-align: center; color: #a0aec0;">{{ t.empty_feed }}</p>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if page == 'adopt' %}
+        <section style="background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px;">
+            <h2 style="margin-top:0;">{{ t.adopt_title }}</h2>
+            <form action="{{ url_for('add_adopt', lang=lang) }}" method="POST" enctype="multipart/form-data">
+                <input type="text" name="name" placeholder="Dostumuzun Adı" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="breed" placeholder="Türü / Irkı" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="age" placeholder="Yaşı" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="location" placeholder="Şehir" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="contact" placeholder="İletişim (Telefon / E-posta)" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: 600; font-size: 14px;">{{ t.upload_label }}</label>
+                    <input type="file" name="file" accept="image/*" required style="display: block; margin-top: 5px;">
+                </div>
+                <button type="submit" style="background: #4ecdc4; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%;">{{ t.adopt_btn }}</button>
+            </form>
+        </section>
+
+        <section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px;">
+            {% for item in adoptions %}
+            <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                <img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" style="width: 100%; height: 200px; object-fit: cover;">
+                <div style="padding: 15px;">
+                    <h3 style="margin: 0 0 8px 0;">{{ item.name }}</h3>
+                    <p style="margin: 3px 0; font-size: 13px; color: #4a5568;">🐾 {{ item.breed }} ({{ item.age }})</p>
+                    <p style="margin: 3px 0; font-size: 13px; color: #4a5568;">📍 {{ item.location }}</p>
+                    <a href="tel:{{ item.contact }}" style="display: block; text-align: center; margin-top: 10px; background: #edf2f7; color: #2d3748; padding: 8px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px;">📞 {{ item.contact }}</a>
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        {% if page == 'lost' %}
+        <section style="background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px;">
+            <h2 style="margin-top:0;">{{ t.lost_title }}</h2>
+            <form action="{{ url_for('add_lost', lang=lang) }}" method="POST" enctype="multipart/form-data">
+                <input type="text" name="title" placeholder="İlan Başlığı" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="pet_type" placeholder="Tür / Belirgin Özellikler" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="last_seen" placeholder="Son Görüldüğü Yer" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="text" name="phone" placeholder="Telefon Numarası" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: 600; font-size: 14px;">{{ t.upload_label }}</label>
+                    <input type="file" name="file" accept="image/*" required style="display: block; margin-top: 5px;">
+                </div>
+                <button type="submit" style="background: #e53e3e; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%;">{{ t.lost_btn }}</button>
+            </form>
+        </section>
+
+        <section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px;">
+            {% for item in lost_pets %}
+            <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 2px solid #feb2b2;">
+                <img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" style="width: 100%; height: 200px; object-fit: cover;">
+                <div style="padding: 15px;">
+                    <h3 style="margin: 0 0 8px 0; color: #e53e3e;">{{ item.title }}</h3>
+                    <p style="margin: 3px 0; font-size: 13px; color: #4a5568;">🐾 {{ item.pet_type }}</p>
+                    <p style="margin: 3px 0; font-size: 13px; color: #4a5568;">📍 {{ item.last_seen }}</p>
+                    <a href="tel:{{ item.phone }}" style="display: block; text-align: center; margin-top: 10px; background: #fff5f5; color: #e53e3e; padding: 8px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px;">📞 {{ item.phone }}</a>
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+    </main>
+
+    <!-- GİRİŞ MODAL -->
+    <div id="loginModal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); align-items: center; justify-content: center;">
+        <div style="background: white; padding: 30px; border-radius: 16px; width: 320px; position: relative;">
+            <span onclick="closeLoginModal()" style="position: absolute; right: 15px; top: 10px; cursor: pointer; font-size: 20px; font-weight: bold;">&times;</span>
+            <h3 style="margin-top:0;">🐾 Hoş Geldin!</h3>
+            <form action="{{ url_for('login') }}" method="POST">
+                <input type="text" name="username" placeholder="Adın" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <input type="email" name="email" placeholder="E-posta" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <button type="submit" style="background: #4ecdc4; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%;">Giriş Yap</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openLoginModal() { document.getElementById("loginModal").style.display = "flex"; }
+        function closeLoginModal() { document.getElementById("loginModal").style.display = "none"; }
+    </script>
+</body>
+</html>
